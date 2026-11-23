@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { HabitStreakHeatmap } from '../components/HabitStreakHeatmap';
 import { HealthMeterGauge } from '../components/HealthMeterGauge';
 import { WeightTrendChart } from '../components/WeightTrendChart';
 import { useApp } from '../context/AppContext';
@@ -41,6 +42,7 @@ export const DashboardScreen: React.FC<Props> = ({
     todayNutrition,
     macroTargets,
     healthMeter,
+    habitTracker,
     addBodyMeasurement,
     addWater,
   } = useApp();
@@ -162,6 +164,12 @@ export const DashboardScreen: React.FC<Props> = ({
           <Text style={styles.statLabel}>Mode</Text>
         </View>
       </View>
+
+      {/* GitHub-Style Session Habit Tracker */}
+      <HabitStreakHeatmap
+        summary={habitTracker}
+        unitSystem={profile.unitSystem}
+      />
 
       {/* Today's Recommended Workout Card */}
       <View style={styles.sectionHeader}>

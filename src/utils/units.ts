@@ -3,21 +3,38 @@ import { UnitSystem } from '../types';
 export const KG_TO_LBS = 2.20462;
 export const CM_TO_IN = 0.393701;
 
-export function getTodayISO(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
+export function formatDateToISO(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+export function parseISODateLocal(dateISO: string): Date {
+  const [y, m, d] = dateISO.split('-').map((n) => parseInt(n, 10));
+  return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0, 0);
+}
+
+export function addDaysToISO(dateISO: string, deltaDays: number): string {
+  const date = parseISODateLocal(dateISO);
+  date.setDate(date.getDate() + deltaDays);
+  return formatDateToISO(date);
+}
+
+/** Monday = 0 ... Sunday = 6 */
+export function getWeekdayIndexFromISO(dateISO: string): number {
+  const jsDay = parseISODateLocal(dateISO).getDay(); // 0=Sun, 1=Mon
+  return jsDay === 0 ? 6 : jsDay - 1;
+}
+
+export function getTodayISO(): string {
+  return formatDateToISO(new Date());
 }
 
 export function getOffsetDateISO(daysOffset: number): string {
   const date = new Date();
   date.setDate(date.getDate() + daysOffset);
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return formatDateToISO(date);
 }
 
 /** Monday = 0 ... Sunday = 6 */

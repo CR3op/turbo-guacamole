@@ -5,7 +5,11 @@ import {
   UserProfile,
   WorkoutSession,
 } from '../types';
-import { getOffsetDateISO, getTodayISO } from '../utils/units';
+import {
+  getOffsetDateISO,
+  getTodayISO,
+  getWeekdayIndexFromISO,
+} from '../utils/units';
 
 const STORAGE_KEY = '@physique_meter_state_v1';
 
@@ -15,6 +19,134 @@ export interface PersistedAppState {
   bodyHistory: BodyMeasurementEntry[];
   nutritionLogs: Record<string, DailyNutritionLog>;
   customSwaps: Record<string, string>; // key: "dayIndex-slotIndex" -> exerciseId
+}
+
+/**
+ * Generates realistic sample sessions aligned to the default 4-day split (Mon/Tue/Thu/Fri)
+ * so the GitHub-style habit heatmap immediately showcases active streaks, preserved rest days,
+ * and intensity shading.
+ */
+function buildSampleWorkouts(): WorkoutSession[] {
+  const defaultTrainingWeekdays = new Set([0, 1, 3, 4]); // Mon, Tue, Thu, Fri
+  const recentTrainingOffsets: number[] = [];
+
+  for (let offset = -1; offset >= -35 && recentTrainingOffsets.length < 10; offset--) {
+    const iso = getOffsetDateISO(offset);
+    if (defaultTrainingWeekdays.has(getWeekdayIndexFromISO(iso))) {
+      recentTrainingOffsets.push(offset);
+    }
+  }
+
+  // Keep the 3 most recent scheduled training days intact for an active 3-session streak,
+  // skip the 4th to show a natural break, then populate earlier training days for history.
+  const pickedOffsets = [
+    recentTrainingOffsets[0],
+    recentTrainingOffsets[1],
+    recentTrainingOffsets[2],
+    recentTrainingOffsets[4],
+    recentTrainingOffsets[5],
+    recentTrainingOffsets[7],
+  ].filter((n): n is number => typeof n === 'number');
+
+  const templates = [
+    {
+      dayTitle: 'Lower Body & Core',
+      durationMinutes: 51,
+      totalVolumeKg: 6890,
+      totalSetsCompleted: 16,
+      exercises: [
+        {
+          exerciseId: 'barbell-back-squat',
+          exerciseName: 'Barbell Back Squat',
+          muscleGroup: 'Legs' as const,
+          sets: [
+            { setNumber: 1, weight: 95, reps: 8, completed: true },
+            { setNumber: 2, weight: 95, reps: 8, completed: true },
+            { setNumber: 3, weight: 100, reps: 6, completed: true },
+          ],
+        },
+      ],
+    },
+    {
+      dayTitle: 'Upper Body Strength',
+      durationMinutes: 46,
+      totalVolumeKg: 5420,
+      totalSetsCompleted: 20,
+      exercises: [
+        {
+          exerciseId: 'barbell-bench-press',
+          exerciseName: 'Barbell Bench Press',
+          muscleGroup: 'Chest' as const,
+          sets: [
+            { setNumber: 1, weight: 70, reps: 8, completed: true },
+            { setNumber: 2, weight: 70, reps: 8, completed: true },
+            { setNumber: 3, weight: 72.5, reps: 7, completed: true },
+          ],
+        },
+        {
+          exerciseId: 'pull-ups',
+          exerciseName: 'Pull-Ups',
+          muscleGroup: 'Back' as const,
+          sets: [
+            { setNumber: 1, weight: 79, reps: 9, completed: true },
+            { setNumber: 2, weight: 79, reps: 8, completed: true },
+            { setNumber: 3, weight: 79, reps: 8, completed: true },
+          ],
+        },
+      ],
+    },
+    {
+      dayTitle: 'Upper Body Sculpt',
+      durationMinutes: 42,
+      totalVolumeKg: 4650,
+      totalSetsCompleted: 12,
+      exercises: [
+        {
+          exerciseId: 'pull-ups',
+          exerciseName: 'Pull-Ups',
+          muscleGroup: 'Back' as const,
+          sets: [
+            { setNumber: 1, weight: 79, reps: 10, completed: true },
+            { setNumber: 2, weight: 79, reps: 9, completed: true },
+            { setNumber: 3, weight: 79, reps: 8, completed: true },
+          ],
+        },
+      ],
+    },
+    {
+      dayTitle: 'Lower Power & Conditioning',
+      durationMinutes: 34,
+      totalVolumeKg: 3820,
+      totalSetsCompleted: 9,
+      exercises: [
+        {
+          exerciseId: 'barbell-back-squat',
+          exerciseName: 'Barbell Back Squat',
+          muscleGroup: 'Legs' as const,
+          sets: [
+            { setNumber: 1, weight: 90, reps: 8, completed: true },
+            { setNumber: 2, weight: 90, reps: 8, completed: true },
+            { setNumber: 3, weight: 92.5, reps: 8, completed: true },
+          ],
+        },
+      ],
+    },
+  ];
+
+  return pickedOffsets.map((offset, idx) => {
+    const tpl = templates[idx % templates.length];
+    return {
+      id: `seed-w${idx + 1}`,
+      dateISO: getOffsetDateISO(offset),
+      completedAt: new Date(Date.now() + offset * 86400000).toISOString(),
+      dayTitle: tpl.dayTitle,
+      physiqueGoal: 'athletic_agile',
+      durationMinutes: tpl.durationMinutes,
+      totalVolumeKg: tpl.totalVolumeKg,
+      totalSetsCompleted: tpl.totalSetsCompleted,
+      exercises: tpl.exercises,
+    };
+  });
 }
 
 export function createDefaultState(): PersistedAppState {
@@ -35,62 +167,7 @@ export function createDefaultState(): PersistedAppState {
       unitSystem: 'imperial',
       onboardingCompleted: false,
     },
-    workouts: [
-      {
-        id: 'seed-w1',
-        dateISO: getOffsetDateISO(-3),
-        completedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-        dayTitle: 'Upper Body Strength',
-        physiqueGoal: 'athletic_agile',
-        durationMinutes: 46,
-        totalVolumeKg: 5420,
-        totalSetsCompleted: 15,
-        exercises: [
-          {
-            exerciseId: 'barbell-bench-press',
-            exerciseName: 'Barbell Bench Press',
-            muscleGroup: 'Chest',
-            sets: [
-              { setNumber: 1, weight: 70, reps: 8, completed: true },
-              { setNumber: 2, weight: 70, reps: 8, completed: true },
-              { setNumber: 3, weight: 72.5, reps: 7, completed: true },
-            ],
-          },
-          {
-            exerciseId: 'pull-ups',
-            exerciseName: 'Pull-Ups',
-            muscleGroup: 'Back',
-            sets: [
-              { setNumber: 1, weight: 79, reps: 9, completed: true },
-              { setNumber: 2, weight: 79, reps: 8, completed: true },
-              { setNumber: 3, weight: 79, reps: 8, completed: true },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'seed-w2',
-        dateISO: getOffsetDateISO(-1),
-        completedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-        dayTitle: 'Lower Body & Core',
-        physiqueGoal: 'athletic_agile',
-        durationMinutes: 51,
-        totalVolumeKg: 6890,
-        totalSetsCompleted: 15,
-        exercises: [
-          {
-            exerciseId: 'barbell-back-squat',
-            exerciseName: 'Barbell Back Squat',
-            muscleGroup: 'Legs',
-            sets: [
-              { setNumber: 1, weight: 95, reps: 8, completed: true },
-              { setNumber: 2, weight: 95, reps: 8, completed: true },
-              { setNumber: 3, weight: 100, reps: 6, completed: true },
-            ],
-          },
-        ],
-      },
-    ],
+    workouts: buildSampleWorkouts(),
     bodyHistory: [
       { id: 'b1', dateISO: getOffsetDateISO(-21), weightKg: 81.2, waistCm: 85.5 },
       { id: 'b2', dateISO: getOffsetDateISO(-14), weightKg: 80.5, waistCm: 84.8 },

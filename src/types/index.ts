@@ -156,6 +156,32 @@ export interface MacroTargets {
   rationale: string;
 }
 
+export type ContributionLevel = 0 | 1 | 2 | 3 | 4;
+
+export interface HabitDayCell {
+  dateISO: string;
+  weekdayIndex: number; // 0 = Mon .. 6 = Sun
+  isRestDay: boolean;
+  isToday: boolean;
+  isFuture: boolean;
+  level: ContributionLevel;
+  sessions: WorkoutSession[];
+  totalSets: number;
+  totalMinutes: number;
+  totalVolumeKg: number;
+}
+
+export interface HabitTrackerSummary {
+  currentStreak: number;
+  longestStreak: number;
+  totalSessions: number;
+  activeDaysInWindow: number;
+  sessionsInWindow: number;
+  completedToday: boolean;
+  isTodayRestDay: boolean;
+  weeks: HabitDayCell[][];
+}
+
 export interface HealthMeterBreakdown {
   overallScore: number; // 0-100
   statusLabel: string;
@@ -165,6 +191,7 @@ export interface HealthMeterBreakdown {
   nutritionScore: number; // 0-100
   physiqueProgressScore: number; // 0-100
   currentStreakDays: number;
+  longestStreakDays: number;
   workoutsThisWeek: number;
   weeklyTarget: number;
   nextMilestoneText: string;

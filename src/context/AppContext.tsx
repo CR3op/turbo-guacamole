@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { calculateHealthMeter } from '../engine/healthMeter';
+import { calculateHealthMeter, computeGitHubHabitTracker } from '../engine/healthMeter';
 import { calculateMacroTargets } from '../engine/nutritionCalculator';
 import { generateWeeklyPlan } from '../engine/workoutGenerator';
 import {
@@ -13,6 +13,7 @@ import {
   BodyMeasurementEntry,
   DailyNutritionLog,
   FoodLogItem,
+  HabitTrackerSummary,
   HealthMeterBreakdown,
   MacroTargets,
   UserProfile,
@@ -30,6 +31,7 @@ interface AppContextValue {
   weeklyPlan: WorkoutDayPlan[];
   macroTargets: MacroTargets;
   healthMeter: HealthMeterBreakdown;
+  habitTracker: HabitTrackerSummary;
   updateProfile: (patch: Partial<UserProfile>) => void;
   swapPlannedExercise: (dayIndex: number, slotIndex: number, newExerciseId: string) => void;
   clearCustomSwaps: () => void;
@@ -89,6 +91,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [state.profile]
   );
 
+  const habitTracker = useMemo(
+    () => computeGitHubHabitTracker(state.workouts, weeklyPlan),
+    [state.workouts, weeklyPlan]
+  );
+
   const healthMeter = useMemo(
     () =>
       calculateHealthMeter(
@@ -96,9 +103,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         state.workouts,
         state.bodyHistory,
         todayNutrition,
-        macroTargets
+        macroTargets,
+        weeklyPlan
       ),
-    [state.profile, state.workouts, state.bodyHistory, todayNutrition, macroTargets]
+    [state.profile, state.workouts, state.bodyHistory, todayNutrition, macroTargets, weeklyPlan]
   );
 
   const updateProfile = useCallback((patch: Partial<UserProfile>) => {
@@ -298,6 +306,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       weeklyPlan,
       macroTargets,
       healthMeter,
+      habitTracker,
       updateProfile,
       swapPlannedExercise,
       clearCustomSwaps,
@@ -318,6 +327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       weeklyPlan,
       macroTargets,
       healthMeter,
+      habitTracker,
       updateProfile,
       swapPlannedExercise,
       clearCustomSwaps,
